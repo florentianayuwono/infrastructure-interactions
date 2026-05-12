@@ -98,8 +98,6 @@ The `send_to_agent` tool is injected into the existing session, so you (and the 
 
 Use this when no Copilot CLI is running and you want a fully automated, headless agent.
 
-The spawned CLI starts in `--ui-server` mode by default, exposing the foreground session API so other tools can hook into it.
-
 **macOS / Linux:**
 ```bash
 REGISTRY_URL=http://<registry-host>:3000 \

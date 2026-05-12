@@ -53,9 +53,8 @@ export class AgentClient {
     if (opts.copilotCliUrl) {
       this._copilotClient = new CopilotClient({ cliUrl: opts.copilotCliUrl });
     } else {
-      const cliArgs = ["--ui-server"];
-      if (opts.yolo) cliArgs.push("--yolo");
-      this._copilotClient = new CopilotClient({ cliArgs });
+      const cliArgs = opts.yolo ? ["--yolo"] : [];
+      this._copilotClient = new CopilotClient(cliArgs.length ? { cliArgs } : {});
     }
   }
 

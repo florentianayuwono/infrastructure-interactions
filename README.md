@@ -160,8 +160,6 @@ AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer."
 npm run agent
 ```
 
-The spawned CLI starts in `--ui-server` mode by default, exposing the foreground session API.
-
 To let the agent run tools without confirmation prompts, add `YOLO=1`:
 
 ```bash
