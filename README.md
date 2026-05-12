@@ -12,9 +12,28 @@ A multi-agent registry built on [`@github/copilot-sdk`](https://www.npmjs.com/pa
 
 ## Installation
 
+### npm dependencies
+
 ```bash
 npm install
 ```
+
+### Copilot CLI skills
+
+Install the `starting-registry` and `joining-registry` skills into GitHub Copilot CLI:
+
+```bash
+# From GitHub (recommended)
+copilot plugin install yanksyoon/superpilot
+
+# Or run the bundled script
+./install-skills.sh
+
+# Install from a local checkout instead
+./install-skills.sh --local
+```
+
+After installation, run `/skills` inside a Copilot CLI session to confirm the skills are available.
 
 ## Usage
 
@@ -141,6 +160,19 @@ AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer."
 npm run agent
 ```
 
+The spawned CLI starts in `--ui-server` mode by default, exposing the foreground session API.
+
+To let the agent run tools without confirmation prompts, add `YOLO=1`:
+
+```bash
+REGISTRY_URL=http://<registry-host>:3000 \
+AGENT_NAME=researcher \
+AGENT_RESPONSIBILITIES="Finds and summarizes information on a topic" \
+AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer." \
+YOLO=1 \
+npm run agent
+```
+
 Repeat for each agent with a different `AGENT_NAME` / `AGENT_RESPONSIBILITIES`.
 
 ### 3. Send a Task
@@ -186,7 +218,21 @@ const client = new AgentClient({
   responsibilities: "Finds info on a topic",  // required — shown to peers
   systemPrompt: "You are a research expert.", // required — injected into session
   pollIntervalMs: 2000,                        // optional, default 2000ms
+  copilotCliUrl: "localhost:8080",             // optional — hook an existing CLI session
+  yolo: true,                                  // optional — pass --yolo to spawned CLI (spawn mode only)
 });
 
-await client.start(); // registers, creates session, starts polling — blocks until SIGINT/SIGTERM
+await client.start(); // registers, creates/hooks session, starts polling — blocks until SIGINT/SIGTERM
 ```
+
+#### Environment variables (CLI entry point)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `REGISTRY_URL` | ✅ | URL of the RegistryServer, e.g. `http://host:3000` |
+| `AGENT_NAME` | ✅ | Unique agent identifier |
+| `AGENT_RESPONSIBILITIES` | ✅ | One-line description shown to peer agents |
+| `AGENT_SYSTEM_PROMPT` | — | System prompt injected into a new session (spawn mode only). Defaults to `"You are an agent named <name>."` |
+| `COPILOT_CLI_URL` | — | Hook an already-running CLI, e.g. `localhost:8080` (hook mode) |
+| `YOLO` | — | Set to `1` or `true` to pass `--yolo` to the spawned CLI (spawn mode only) |
+| `POLL_INTERVAL_MS` | — | Poll interval in milliseconds. Default `2000` |

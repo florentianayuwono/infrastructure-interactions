@@ -22,6 +22,13 @@ export interface AgentClientOptions {
    *   copilot --server          (server only, no TUI)
    */
   copilotCliUrl?: string;
+  /**
+   * Pass --yolo (--allow-all) to the spawned Copilot CLI process so the agent
+   * can execute tools without confirmation prompts. Only applies in spawn mode
+   * (ignored when copilotCliUrl is set, since the CLI is already running).
+   * @default false
+   */
+  yolo?: boolean;
 }
 
 export class AgentClient {
@@ -42,9 +49,14 @@ export class AgentClient {
     this._systemPrompt = opts.systemPrompt;
     this._pollIntervalMs = opts.pollIntervalMs ?? 2000;
     this._copilotCliUrl = opts.copilotCliUrl;
-    this._copilotClient = opts.copilotCliUrl
-      ? new CopilotClient({ cliUrl: opts.copilotCliUrl })
-      : new CopilotClient();
+
+    if (opts.copilotCliUrl) {
+      this._copilotClient = new CopilotClient({ cliUrl: opts.copilotCliUrl });
+    } else {
+      const cliArgs = ["--ui-server"];
+      if (opts.yolo) cliArgs.push("--yolo");
+      this._copilotClient = new CopilotClient({ cliArgs });
+    }
   }
 
   async start(): Promise<void> {
@@ -261,6 +273,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.env["AGENT_SYSTEM_PROMPT"] ?? `You are an agent named ${name}.`;
   const pollIntervalMs = parseInt(process.env["POLL_INTERVAL_MS"] ?? "2000", 10);
   const copilotCliUrl = process.env["COPILOT_CLI_URL"]; // e.g. "localhost:8080"
+  const yolo = process.env["YOLO"] === "1" || process.env["YOLO"] === "true";
 
   if (!registryUrl || !name || !responsibilities) {
     console.error(
@@ -277,6 +290,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     systemPrompt,
     pollIntervalMs,
     copilotCliUrl,
+    yolo,
   });
 
   client.start().catch((err: unknown) => {

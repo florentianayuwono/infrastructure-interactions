@@ -98,6 +98,8 @@ The `send_to_agent` tool is injected into the existing session, so you (and the 
 
 Use this when no Copilot CLI is running and you want a fully automated, headless agent.
 
+The spawned CLI starts in `--ui-server` mode by default, exposing the foreground session API so other tools can hook into it.
+
 **macOS / Linux:**
 ```bash
 REGISTRY_URL=http://<registry-host>:3000 \
@@ -107,12 +109,24 @@ AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer."
 npm run agent
 ```
 
+To allow the agent to run tools without confirmation prompts, add `YOLO=1`:
+
+```bash
+REGISTRY_URL=http://<registry-host>:3000 \
+AGENT_NAME=researcher \
+AGENT_RESPONSIBILITIES="Finds and summarizes information on a topic" \
+AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer." \
+YOLO=1 \
+npm run agent
+```
+
 **Windows (PowerShell):**
 ```powershell
 $env:REGISTRY_URL="http://<registry-host>:3000"
 $env:AGENT_NAME="researcher"
 $env:AGENT_RESPONSIBILITIES="Finds and summarizes information on a topic"
 $env:AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer."
+$env:YOLO="1"   # optional — remove to keep confirmation prompts
 npm run agent
 ```
 
@@ -122,10 +136,12 @@ set REGISTRY_URL=http://<registry-host>:3000
 set AGENT_NAME=researcher
 set AGENT_RESPONSIBILITIES=Finds and summarizes information on a topic
 set AGENT_SYSTEM_PROMPT=You are a research expert. Forward findings to the writer.
+set YOLO=1
 npm run agent
 ```
 
 `AGENT_SYSTEM_PROMPT` is **optional** (ignored in hook mode) — defaults to `"You are an agent named <AGENT_NAME>."`.
+`YOLO` is **optional** (ignored in hook mode) — set to `1` or `true` to pass `--yolo` to the spawned CLI.
 
 **Expected startup output:**
 ```
@@ -178,8 +194,31 @@ const client = new AgentClient({
   copilotCliUrl: "localhost:8080", // set this to hook existing session
   pollIntervalMs: 2000, // optional
 });
+
+// Spawn mode — fresh CLI process (defaults to --ui-server)
+const worker = new AgentClient({
+  registryUrl: "http://registry-host:3000",
+  name: "worker",
+  responsibilities: "Executes background tasks",
+  systemPrompt: "You are a worker agent.",
+  yolo: true, // optional — pass --yolo to spawned CLI; ignored in hook mode
+  pollIntervalMs: 2000,
+});
+
 await client.start(); // blocks until SIGINT/SIGTERM
 ```
+
+## Environment Variable Reference
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `REGISTRY_URL` | ✅ | URL of the RegistryServer, e.g. `http://host:3000` |
+| `AGENT_NAME` | ✅ | Unique agent identifier |
+| `AGENT_RESPONSIBILITIES` | ✅ | One-line description shown to peer agents |
+| `AGENT_SYSTEM_PROMPT` | — | System prompt for new session (spawn mode only). Defaults to `"You are an agent named <name>."` |
+| `COPILOT_CLI_URL` | — | Hook an already-running CLI, e.g. `localhost:8080` (activates hook mode) |
+| `YOLO` | — | Set to `1` or `true` to pass `--yolo` to the spawned CLI (spawn mode only) |
+| `POLL_INTERVAL_MS` | — | Message poll interval in ms. Default `2000` |
 
 ## Lifecycle Reference
 
