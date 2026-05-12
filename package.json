@@ -7,7 +7,9 @@
   "types": "dist/agent-registry.d.ts",
   "scripts": {
     "build": "tsc",
-    "example": "npm run build && node dist/example.js"
+    "example": "npm run build && node dist/example.js",
+    "registry": "npm run build && node dist/registry-server.js",
+    "agent": "npm run build && node dist/agent-client.js"
   },
   "dependencies": {
     "@github/copilot-sdk": "^0.3.0",
