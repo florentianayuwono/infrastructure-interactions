@@ -265,21 +265,60 @@ export class AgentClient {
 // ── CLI entry point ──────────────────────────────────────────────────────────
 // When run directly (npm run agent), reads config from environment variables.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { spawn } = await import("node:child_process");
+  const { createServer } = await import("node:net");
+
   const registryUrl = process.env["REGISTRY_URL"];
   const name = process.env["AGENT_NAME"];
   const responsibilities = process.env["AGENT_RESPONSIBILITIES"];
   const systemPrompt =
     process.env["AGENT_SYSTEM_PROMPT"] ?? `You are an agent named ${name}.`;
   const pollIntervalMs = parseInt(process.env["POLL_INTERVAL_MS"] ?? "2000", 10);
-  const copilotCliUrl = process.env["COPILOT_CLI_URL"]; // e.g. "localhost:8080"
   const yolo = process.env["YOLO"] === "1" || process.env["YOLO"] === "true";
 
   if (!registryUrl || !name || !responsibilities) {
     console.error(
       "Usage: REGISTRY_URL=<url> AGENT_NAME=<name> AGENT_RESPONSIBILITIES=<desc> npm run agent\n" +
-      "       COPILOT_CLI_URL=localhost:8080  (optional — hook into existing Copilot CLI)",
+      "       COPILOT_CLI_URL=localhost:8080  (optional — hook into existing Copilot CLI)\n" +
+      "       YOLO=1                          (optional — allow all tools without confirmation)",
     );
     process.exit(1);
+  }
+
+  // Resolve the CLI URL: use an existing CLI if provided, otherwise spawn a
+  // new `copilot --ui-server` process so the user gets an interactive TUI.
+  let copilotCliUrl = process.env["COPILOT_CLI_URL"];
+  let spawnedCli: ReturnType<typeof spawn> | null = null;
+
+  if (!copilotCliUrl) {
+    // Find a free TCP port for the CLI server.
+    const port = await new Promise<number>((resolve, reject) => {
+      const s = createServer();
+      s.listen(0, "127.0.0.1", () => {
+        const addr = s.address() as { port: number };
+        s.close(() => resolve(addr.port));
+      });
+      s.on("error", reject);
+    });
+
+    copilotCliUrl = `localhost:${port}`;
+
+    console.log(`[AgentClient] Starting Copilot UI server on port ${port}...`);
+    console.log(`[AgentClient] To hook another agent into this session, run in a new terminal:`);
+    console.log(`  COPILOT_CLI_URL=localhost:${port} REGISTRY_URL=${registryUrl} AGENT_NAME=<name> AGENT_RESPONSIBILITIES=<desc> npm run agent`);
+    console.log();
+
+    const cliArgs = ["--ui-server", "--port", String(port), "--no-auto-update"];
+    if (yolo) cliArgs.push("--yolo");
+
+    spawnedCli = spawn("copilot", cliArgs, { stdio: "inherit" });
+
+    spawnedCli.on("exit", (code) => {
+      process.exit(code ?? 0);
+    });
+
+    // Give the CLI server time to bind its port before connecting.
+    await new Promise<void>((resolve) => setTimeout(resolve, 2000));
   }
 
   const client = new AgentClient({
@@ -291,6 +330,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     copilotCliUrl,
     yolo,
   });
+
+  // If we spawned the CLI, make sure it's cleaned up when the agent exits.
+  if (spawnedCli) {
+    const origExit = process.exit.bind(process);
+    process.exit = ((code?: number) => {
+      spawnedCli?.kill();
+      origExit(code);
+    }) as typeof process.exit;
+  }
 
   client.start().catch((err: unknown) => {
     console.error("Fatal:", err);

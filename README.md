@@ -160,6 +160,14 @@ AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer."
 npm run agent
 ```
 
+When `COPILOT_CLI_URL` is not set, the script automatically spawns `copilot --ui-server`, giving you an interactive TUI. Before the TUI starts it prints the command to hook additional agents into the same session:
+
+```
+[AgentClient] Starting Copilot UI server on port 54321...
+[AgentClient] To hook another agent into this session, run in a new terminal:
+  COPILOT_CLI_URL=localhost:54321 REGISTRY_URL=http://<registry-host>:3000 AGENT_NAME=<name> AGENT_RESPONSIBILITIES=<desc> npm run agent
+```
+
 To let the agent run tools without confirmation prompts, add `YOLO=1`:
 
 ```bash

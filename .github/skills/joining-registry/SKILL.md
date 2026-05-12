@@ -96,7 +96,15 @@ The `send_to_agent` tool is injected into the existing session, so you (and the 
 
 ## Spawn mode — start a fresh agent
 
-Use this when no Copilot CLI is running and you want a fully automated, headless agent.
+Use this when no Copilot CLI is running. `npm run agent` will automatically spawn `copilot --ui-server`, giving you an interactive TUI session, then hook the AgentClient into it.
+
+Before the TUI takes over the terminal it prints the command to hook additional agents:
+
+```
+[AgentClient] Starting Copilot UI server on port 54321...
+[AgentClient] To hook another agent into this session, run in a new terminal:
+  COPILOT_CLI_URL=localhost:54321 REGISTRY_URL=... AGENT_NAME=<name> AGENT_RESPONSIBILITIES=<desc> npm run agent
+```
 
 **macOS / Linux:**
 ```bash
