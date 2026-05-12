@@ -32,25 +32,8 @@ export class AgentClient {
   async start(): Promise<void> {
     await this._copilotClient.start();
 
-    // 1. Register with the registry server
-    const regRes = await fetch(`${this._registryUrl}/agents`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: this._name,
-        responsibilities: this._responsibilities,
-      }),
-    });
-    if (regRes.status === 409) {
-      throw new Error(`Agent "${this._name}" is already registered at ${this._registryUrl}`);
-    }
-    if (!regRes.ok) {
-      throw new Error(
-        `Failed to register agent "${this._name}": ${regRes.status} ${await regRes.text()}`,
-      );
-    }
-
-    // 2. Fetch current roster to build peer awareness
+    // 1. Fetch peer roster BEFORE registering — avoids a phantom registration
+    //    if session creation fails or hangs (Copilot not authenticated, CLI down, etc.)
     const peersRes = await fetch(`${this._registryUrl}/agents`);
     if (!peersRes.ok) {
       throw new Error(`Failed to fetch agent roster: ${peersRes.status}`);
@@ -65,7 +48,9 @@ export class AgentClient {
       .map((p) => `${p.name} (${p.responsibilities})`)
       .join("; ");
 
-    // 3. Create CopilotSession with send_to_agent tool
+    // 2. Create CopilotSession BEFORE registering — if this hangs or throws
+    //    (unauthenticated, CLI not running), the agent won't appear in the registry
+    //    with no poll loop to service it.
     const session = await this._copilotClient.createSession({
       onPermissionRequest: approveAll,
       systemMessage: {
@@ -101,6 +86,27 @@ export class AgentClient {
         }),
       ],
     });
+
+    // 3. Register NOW — session is live and poll loop is about to start,
+    //    so any message enqueued immediately after this will be consumed.
+    const regRes = await fetch(`${this._registryUrl}/agents`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: this._name,
+        responsibilities: this._responsibilities,
+      }),
+    });
+    if (regRes.status === 409) {
+      await session.disconnect();
+      throw new Error(`Agent "${this._name}" is already registered at ${this._registryUrl}`);
+    }
+    if (!regRes.ok) {
+      await session.disconnect();
+      throw new Error(
+        `Failed to register agent "${this._name}": ${regRes.status} ${await regRes.text()}`,
+      );
+    }
 
     // 4. Graceful shutdown handler
     const shutdown = async () => {
