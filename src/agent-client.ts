@@ -1,13 +1,27 @@
 import { fileURLToPath } from "url";
-import { CopilotClient, approveAll, defineTool } from "@github/copilot-sdk";
+import { CopilotClient, CopilotSession, approveAll, defineTool } from "@github/copilot-sdk";
 import { z } from "zod";
 
 export interface AgentClientOptions {
   registryUrl: string;
   name: string;
   responsibilities: string;
+  /** Appended to the system message when creating a new session. Ignored when hooking an existing session. */
   systemPrompt: string;
   pollIntervalMs?: number;
+  /**
+   * Connect to an already-running Copilot CLI server instead of spawning a new process.
+   * Format: "localhost:8080" or "http://127.0.0.1:8080".
+   *
+   * When set, the agent hooks into your existing session (foreground session in TUI, or
+   * most-recently-modified session as fallback). The send_to_agent tool is injected into
+   * that session so the LLM can delegate work to other registry agents.
+   *
+   * The Copilot CLI must be running in server mode:
+   *   copilot --ui-server       (recommended — exposes foreground session API)
+   *   copilot --server          (server only, no TUI)
+   */
+  copilotCliUrl?: string;
 }
 
 export class AgentClient {
@@ -16,6 +30,7 @@ export class AgentClient {
   private readonly _responsibilities: string;
   private readonly _systemPrompt: string;
   private readonly _pollIntervalMs: number;
+  private readonly _copilotCliUrl: string | undefined;
   private readonly _copilotClient: CopilotClient;
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
   private _stopping = false;
@@ -26,14 +41,17 @@ export class AgentClient {
     this._responsibilities = opts.responsibilities;
     this._systemPrompt = opts.systemPrompt;
     this._pollIntervalMs = opts.pollIntervalMs ?? 2000;
-    this._copilotClient = new CopilotClient();
+    this._copilotCliUrl = opts.copilotCliUrl;
+    this._copilotClient = opts.copilotCliUrl
+      ? new CopilotClient({ cliUrl: opts.copilotCliUrl })
+      : new CopilotClient();
   }
 
   async start(): Promise<void> {
     await this._copilotClient.start();
 
     // 1. Fetch peer roster BEFORE registering — avoids a phantom registration
-    //    if session creation fails or hangs (Copilot not authenticated, CLI down, etc.)
+    //    if session creation/hookup fails or hangs.
     const peersRes = await fetch(`${this._registryUrl}/agents`);
     if (!peersRes.ok) {
       throw new Error(`Failed to fetch agent roster: ${peersRes.status}`);
@@ -48,47 +66,46 @@ export class AgentClient {
       .map((p) => `${p.name} (${p.responsibilities})`)
       .join("; ");
 
-    // 2. Create CopilotSession BEFORE registering — if this hangs or throws
-    //    (unauthenticated, CLI not running), the agent won't appear in the registry
-    //    with no poll loop to service it.
-    const session = await this._copilotClient.createSession({
-      onPermissionRequest: approveAll,
-      systemMessage: {
-        content: `${this._systemPrompt}\n\n${peerBlock}`.trim(),
+    const sendToAgentTool = defineTool("send_to_agent", {
+      description:
+        `Queue a fire-and-forget message to another agent. ` +
+        `Available agents: ${peerRosterDesc || "none registered yet"}`,
+      parameters: z.object({
+        to: z.string().describe("Name of the target agent"),
+        message: z.string().describe("Message to send to that agent"),
+      }),
+      skipPermission: true,
+      handler: async ({ to, message }) => {
+        try {
+          const r = await fetch(
+            `${this._registryUrl}/messages/${encodeURIComponent(to)}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message }),
+            },
+          );
+          if (r.status === 404) return `Unknown agent: "${to}". Check the agent roster.`;
+          if (!r.ok) return `Failed to queue message to "${to}": HTTP ${r.status}`;
+          return `Message queued to ${to}.`;
+        } catch (err) {
+          return `Network error sending to "${to}": ${String(err)}`;
+        }
       },
-      tools: [
-        defineTool("send_to_agent", {
-          description:
-            `Queue a fire-and-forget message to another agent. ` +
-            `Available agents: ${peerRosterDesc || "none registered yet"}`,
-          parameters: z.object({
-            to: z.string().describe("Name of the target agent"),
-            message: z.string().describe("Message to send to that agent"),
-          }),
-          skipPermission: true,
-          handler: async ({ to, message }) => {
-            try {
-              const r = await fetch(
-                `${this._registryUrl}/messages/${encodeURIComponent(to)}`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ message }),
-                },
-              );
-              if (r.status === 404) return `Unknown agent: "${to}". Check the agent roster.`;
-              if (!r.ok) return `Failed to queue message to "${to}": HTTP ${r.status}`;
-              return `Message queued to ${to}.`;
-            } catch (err) {
-              return `Network error sending to "${to}": ${String(err)}`;
-            }
-          },
-        }),
-      ],
     });
 
-    // 3. Register NOW — session is live and poll loop is about to start,
-    //    so any message enqueued immediately after this will be consumed.
+    // 2. Get or create session BEFORE registering.
+    const session = this._copilotCliUrl
+      ? await this._hookExistingSession(sendToAgentTool, peerBlock)
+      : await this._copilotClient.createSession({
+          onPermissionRequest: approveAll,
+          systemMessage: {
+            content: `${this._systemPrompt}\n\n${peerBlock}`.trim(),
+          },
+          tools: [sendToAgentTool],
+        });
+
+    // 3. Register NOW — session is live and poll loop is about to start.
     const regRes = await fetch(`${this._registryUrl}/agents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -160,9 +177,68 @@ export class AgentClient {
       })();
     }, this._pollIntervalMs);
 
+    const mode = this._copilotCliUrl ? `hooked into existing CLI at ${this._copilotCliUrl}` : "new session";
     console.log(
-      `[AgentClient] "${this._name}" started — polling ${this._registryUrl} every ${this._pollIntervalMs}ms`,
+      `[AgentClient] "${this._name}" started (${mode}) — polling ${this._registryUrl} every ${this._pollIntervalMs}ms`,
     );
+  }
+
+  /**
+   * Hook into an already-running Copilot CLI session.
+   *
+   * Priority:
+   *   1. Foreground session (requires CLI running with --ui-server)
+   *   2. Most recently modified session from listSessions()
+   *   3. New session as fallback (CLI is running but has no sessions yet)
+   *
+   * The send_to_agent tool and peer-awareness block are injected via resumeSession,
+   * leaving the existing session's persona and history intact.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async _hookExistingSession(
+    sendToAgentTool: ReturnType<typeof defineTool<any>>,
+    peerBlock: string,
+  ): Promise<CopilotSession> {
+    let sessionId: string | undefined;
+
+    // Try foreground session first (only works with --ui-server)
+    try {
+      sessionId = await this._copilotClient.getForegroundSessionId() ?? undefined;
+      if (sessionId) {
+        console.log(`[AgentClient:${this._name}] Hooking into foreground session ${sessionId}`);
+      }
+    } catch {
+      // getForegroundSessionId is only available in --ui-server mode; fall through
+    }
+
+    // Fall back to most recently modified session
+    if (!sessionId) {
+      const sessions = await this._copilotClient.listSessions();
+      sessions.sort((a, b) => b.modifiedTime.getTime() - a.modifiedTime.getTime());
+      sessionId = sessions[0]?.sessionId;
+      if (sessionId) {
+        console.log(`[AgentClient:${this._name}] Hooking into most recent session ${sessionId}`);
+      }
+    }
+
+    if (sessionId) {
+      return this._copilotClient.resumeSession(sessionId, {
+        onPermissionRequest: approveAll,
+        tools: [sendToAgentTool],
+        // Append peer awareness without overwriting the existing system prompt
+        systemMessage: peerBlock
+          ? { mode: "append", content: `\n\n${peerBlock}` }
+          : undefined,
+      });
+    }
+
+    // No existing session found — create a fresh one
+    console.log(`[AgentClient:${this._name}] No existing session found, creating new session`);
+    return this._copilotClient.createSession({
+      onPermissionRequest: approveAll,
+      systemMessage: { content: `${this._systemPrompt}\n\n${peerBlock}`.trim() },
+      tools: [sendToAgentTool],
+    });
   }
 
   private _buildPeerBlock(
@@ -184,10 +260,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const systemPrompt =
     process.env["AGENT_SYSTEM_PROMPT"] ?? `You are an agent named ${name}.`;
   const pollIntervalMs = parseInt(process.env["POLL_INTERVAL_MS"] ?? "2000", 10);
+  const copilotCliUrl = process.env["COPILOT_CLI_URL"]; // e.g. "localhost:8080"
 
   if (!registryUrl || !name || !responsibilities) {
     console.error(
-      "Usage: REGISTRY_URL=<url> AGENT_NAME=<name> AGENT_RESPONSIBILITIES=<desc> npm run agent",
+      "Usage: REGISTRY_URL=<url> AGENT_NAME=<name> AGENT_RESPONSIBILITIES=<desc> npm run agent\n" +
+      "       COPILOT_CLI_URL=localhost:8080  (optional — hook into existing Copilot CLI)",
     );
     process.exit(1);
   }
@@ -198,6 +276,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     responsibilities,
     systemPrompt,
     pollIntervalMs,
+    copilotCliUrl,
   });
 
   client.start().catch((err: unknown) => {

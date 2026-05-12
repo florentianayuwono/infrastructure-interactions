@@ -44,6 +44,25 @@ $env:PORT=3000; npm run registry
 
 The server binds to **all interfaces** (`0.0.0.0`), so remote machines can reach it immediately — no extra bind configuration needed.
 
+## Starting the Copilot CLI in server mode (for hook mode agents)
+
+If you want agents to hook into an *existing* running Copilot CLI session (rather than spawning their own), start the CLI in server mode **before** running the agent:
+
+```bash
+# Recommended — TUI + server API (exposes foreground session)
+copilot --ui-server
+
+# Headless server only (no TUI)
+copilot --server
+```
+
+The CLI prints its server URL on startup, e.g.:
+```
+Listening on http://127.0.0.1:8080
+```
+
+Pass this as `COPILOT_CLI_URL=localhost:8080` when starting the agent. See the `joining-registry` skill for full details.
+
 ## Verify It Is Working
 
 ```bash
