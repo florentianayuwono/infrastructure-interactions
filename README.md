@@ -116,3 +116,77 @@ registry.send("orchestrator", "Write a blog post about AI")
 → LLM calls send_to_agent { to:"writer", message:"Draft blog with: ..." }
 → enqueue → writer drain → done
 ```
+
+## Distributed Mode (Multiple Machines)
+
+For agents on separate machines, use `RegistryServer` + `AgentClient` instead of `AgentRegistry`.
+
+### 1. Start the Registry Server
+
+On a dedicated machine (or any reachable host):
+
+```bash
+PORT=3000 npm run registry
+```
+
+### 2. Start an Agent on Each Machine
+
+On each agent machine, set environment variables and run:
+
+```bash
+REGISTRY_URL=http://<registry-host>:3000 \
+AGENT_NAME=researcher \
+AGENT_RESPONSIBILITIES="Finds and summarizes information on a topic" \
+AGENT_SYSTEM_PROMPT="You are a research expert. Forward findings to the writer." \
+npm run agent
+```
+
+Repeat for each agent with a different `AGENT_NAME` / `AGENT_RESPONSIBILITIES`.
+
+### 3. Send a Task
+
+From any machine (or a curl call), enqueue a message to any agent:
+
+```bash
+curl -X POST http://<registry-host>:3000/messages/researcher \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Research the latest trends in AI agents."}'
+```
+
+### Local Test (all in one process)
+
+Start the registry server in one terminal and the distributed example in another:
+
+```bash
+# Terminal 1
+PORT=3000 npm run registry
+
+# Terminal 2
+npm run build && node dist/example-distributed.js
+```
+
+### Registry API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/agents` | Register `{ name, responsibilities }` |
+| `DELETE` | `/agents/:name` | Deregister |
+| `GET` | `/agents` | List all agents |
+| `POST` | `/messages/:name` | Enqueue `{ message }` for an agent |
+| `GET` | `/messages/:name` | Dequeue all pending messages → `{ messages: string[] }` |
+
+### AgentClient API
+
+```typescript
+import { AgentClient } from "./src/agent-client.js";
+
+const client = new AgentClient({
+  registryUrl: "http://registry-host:3000",   // required
+  name: "researcher",                          // required
+  responsibilities: "Finds info on a topic",  // required — shown to peers
+  systemPrompt: "You are a research expert.", // required — injected into session
+  pollIntervalMs: 2000,                        // optional, default 2000ms
+});
+
+await client.start(); // registers, creates session, starts polling — blocks until SIGINT/SIGTERM
+```
