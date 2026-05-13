@@ -1,28 +1,51 @@
 ---
 name: visualize-infra
-description: "Use this skill to generate and visualize the current infrastructure connection graph based on the demo configuration repositories."
+description: "Use this skill to generate and visualize the current infrastructure connection graph based on the demo configuration repositories. This tool parses YAML config files to map dependencies between services."
 ---
 
 # Visualize Infrastructure Connections
 
-This skill generates a visual graph of the infrastructure by parsing the configuration files in the `demo/` directory and launching a local web server to display the result.
+This skill allows an agent to generate a visual graph of the infrastructure by analyzing the configuration files in the `demo/` directory. It provides a high-level architectural view of how services are interconnected.
+
+## Prerequisites
+The agent must have:
+1. Access to the `infrastructure-interactions` repository.
+2. Python 3.x installed with the `PyYAML` library.
+3. Ability to run a local HTTP server.
 
 ## Workflow
 
-1. **Generate Graph Data**
-   Run the graph generation engine to parse YAML configs and produce the `graph.json` file.
-   
-   Run: `python3 /home/ubuntu/superpilot/src/infra_graph/main.py --generate`
-   Expected: "Demo-based graph generated at src/infra_graph/web/graph.json"
+### 1. Generate Graph Data
+The agent should implement a parsing script (or use an existing one) that follows this logic:
+- **DNS Mapping:** Parse `demo/defs/hosts.yaml` to create a mapping of IPs to service names.
+- **Connection Extraction:**
+  - Parse `demo/rules/demo/proxy.yaml` for egress rules (Source $\rightarrow$ Internet).
+  - Parse `demo/rules/demo/ingress.yaml` for routing rules (Ingress $\rightarrow$ Backend).
+  - Parse `demo/rules/demo/firewall.yaml` (if present) for allowed TCP/UDP paths.
+- **Graph Compilation:** Resolve all IP addresses to their human-readable names and generate a `graph.json` file in the format:
+  ```json
+  {
+    "nodes": [{"id": "service-name", "label": "Service Label"}],
+    "edges": [{"source": "src", "target": "dst", "label": "port/protocol"}]
+  }
+  ```
 
-2. **Launch Visualization Server**
-   Start the local HTTP server to serve the frontend and the generated data.
-   
-   Run: `cd /home/ubuntu/superpilot/src/infra_graph/web && python3 -m http.server 8000`
-   
-3. **Access the Graph**
-   Inform the user that the graph is available at: `http://localhost:8000`
+### 2. Launch Visualization
+To display the results to the user, start a local web server in the directory containing `graph.json`:
+```bash
+python3 -m http.server 8000
+```
+
+### 3. Access the Map
+Direct the user to access the visualization at: `http://localhost:8000`
+
+## Implementation Details for the Agent
+If a parsing script is not already available in the environment, the agent should create a Python script that:
+- Uses `re` or `PyYAML` to extract rules.
+- Normalizes paths like `services/demo/proxy/internal` to clean names like `demo-proxy`.
+- Handles subnets (e.g., `subnets/demo-infra`) as distinct source nodes.
 
 ## Troubleshooting
-- If the graph looks empty, ensure the `demo/` directory in `infrastructure-interactions` is up to date with `git pull origin main`.
-- If the server fails to start, check if port 8000 is already in use.
+- **Empty Graph:** Check if the `demo/` directory is populated via `git pull origin main`.
+- **Port Conflict:** If port 8000 is taken, use `python3 -m http.server 8080`.
+- **Missing Dependencies:** Install PyYAML via `pip install PyYAML`.
