@@ -46,6 +46,24 @@ variable "packages" {
   default     = []
 }
 
+variable "cloud_init_path" {
+  description = "Path to cloud-init user-data file to push into VM"
+  type        = string
+  default     = ""
+}
+
+variable "exec_commands" {
+  description = "List of shell commands to run inside the VM after creation"
+  type        = list(string)
+  default     = []
+}
+
+variable "config_files" {
+  description = "Map of target paths => file contents to push into the VM"
+  type        = map(string)
+  default     = {}
+}
+
 resource "lxd_instance" "vm" {
   name  = var.name
   image = var.image
@@ -74,6 +92,26 @@ resource "lxd_instance" "vm" {
       "ipv4.address" = var.ip != "" ? var.ip : null
     }
   }
+}
+
+# Push config files into the VM
+resource "lxd_file" "configs" {
+  for_each = var.config_files
+
+  remote      = "local"
+  instance    = lxd_instance.vm.name
+  target_path = each.key
+  content     = each.value
+}
+
+# Execute provisioning commands inside the VM
+resource "lxd_exec" "provision" {
+  count = length(var.exec_commands) > 0 ? 1 : 0
+
+  remote   = "local"
+  instance = lxd_instance.vm.name
+
+  command = join(" && ", var.exec_commands)
 }
 
 output "name" {

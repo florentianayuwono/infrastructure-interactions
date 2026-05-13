@@ -1,11 +1,26 @@
-output "vm_names" {
-  description = "Names of created LXD VMs"
-  value       = [for vm in module.vms : vm.name]
+output "proxy" {
+  description = "Proxy VM"
+  value       = module.proxy
 }
 
-output "vm_ips" {
-  description = "IP addresses of created LXD VMs"
-  value       = { for name, vm in module.vms : name => vm.ipv4_address }
+output "dns" {
+  description = "DNS VM"
+  value       = module.dns
+}
+
+output "ingress" {
+  description = "Ingress VM"
+  value       = module.ingress
+}
+
+output "monitoring" {
+  description = "Monitoring VM"
+  value       = module.monitoring
+}
+
+output "firewall" {
+  description = "Firewall VM"
+  value       = module.firewall
 }
 
 output "network_name" {
