@@ -17,8 +17,9 @@ resource "juju_application" "squid" {
   model = data.juju_model.demo_model.name
 
   charm {
-    name    = "squid-reverseproxy"
-    channel = "latest/stable"
+    name     = "squid-reverseproxy"
+    channel  = "latest/stable"
+    revision = 24 # pinned on 2026-05-13
   }
 
   units = 1
@@ -30,6 +31,8 @@ resource "juju_application" "squid" {
     # Allowed source networks — mirrors demo/rules/demo/proxy.yaml:
     #   subnets/demo-network (10.142.0.0/16)
     #   subnets/rfc1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+    # 10.142.0.0/16 (demo-network) is a subset of 10.0.0.0/8 (rfc1918);
+    # included explicitly to match the policy declarations in demo/rules/demo/proxy.yaml
     allowed-networks = "10.142.0.0/16 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
 
     # Safe outbound ports — mirrors upstream rules/is/squid.yaml allowed ports:

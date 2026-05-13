@@ -63,6 +63,22 @@ module "squid" {
   model_name = local.bare_model
 }
 
+resource "juju_integration" "grafana_agent_squid" {
+  # NOTE: Verify squid-reverseproxy exposes "juju-info" relation before applying.
+  # Confirm with: juju info squid-reverseproxy --format yaml | grep -A5 "provides:"
+  model_uuid = data.juju_model.bare_model.uuid
+
+  application {
+    name     = module.grafana_agent.application_name
+    endpoint = "juju-info"
+  }
+
+  application {
+    name     = module.squid.application_name
+    endpoint = "juju-info"
+  }
+}
+
 # ────────────────────────────────────────────────────────────────
 # 2) K8s + COS-lite model
 # ────────────────────────────────────────────────────────────────
@@ -117,20 +133,6 @@ resource "juju_integration" "grafana_agent_to_cos" {
 
   application {
     offer_url = "admin/${local.k8s_model}.prometheus"
-  }
-}
-
-resource "juju_integration" "grafana_agent_squid" {
-  model_uuid = data.juju_model.bare_model.uuid
-
-  application {
-    name     = module.grafana_agent.application_name
-    endpoint = "juju-info"
-  }
-
-  application {
-    name     = module.squid.application_name
-    endpoint = "juju-info"
   }
 }
 
