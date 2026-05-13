@@ -21,6 +21,10 @@ module "firewall" {
 # 1) Bare VM model
 # ────────────────────────────────────────────────────────────────
 
+data "juju_model" "bare_model" {
+  name = local.bare_model
+}
+
 module "haproxy" {
   source = "../../modules/juju-haproxy"
 
@@ -45,12 +49,18 @@ module "falcosidekick" {
 module "grafana_agent" {
   source = "../../modules/juju-grafana-agent"
 
-  model_name  = local.bare_model
+  model_name = local.bare_model
   target_apps = [
     module.haproxy.application_name,
     module.falcosidekick.application_name,
     module.compute.application_name,
   ]
+}
+
+module "squid" {
+  source = "../../modules/juju-squid"
+
+  model_name = local.bare_model
 }
 
 # ────────────────────────────────────────────────────────────────
@@ -110,6 +120,20 @@ resource "juju_integration" "grafana_agent_to_cos" {
   }
 }
 
+resource "juju_integration" "grafana_agent_squid" {
+  model_uuid = data.juju_model.bare_model.uuid
+
+  application {
+    name     = module.grafana_agent.application_name
+    endpoint = "juju-info"
+  }
+
+  application {
+    name     = module.squid.application_name
+    endpoint = "juju-info"
+  }
+}
+
 # ────────────────────────────────────────────────────────────────
 # Outputs
 # ────────────────────────────────────────────────────────────────
@@ -140,4 +164,8 @@ output "compute_app" {
 
 output "k8s_cluster" {
   value = module.k8s_cluster
+}
+
+output "squid_app" {
+  value = module.squid.application_name
 }
