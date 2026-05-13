@@ -1,55 +1,72 @@
-# Infrastructure Interactions Demo
+# Infrastructure Interactions
 
-This repository contains a **local demo infrastructure** that imitates Canonical's production ps7 OpenStack environment for hackathon purposes.
+A high-fidelity imitation of Canonical's production ps7 OpenStack environment, designed for local development and hackathon demonstrations. This project transforms static configuration-as-code into a verifiable, visual, and manageable infrastructure.
 
-## Overview
+## 🌟 Key Capabilities
 
-Instead of deploying to real OpenStack ps7, this demo uses **LXD VMs** running locally to simulate the infrastructure stack.
+- **LXD-Based Simulation:** Imitates a complex cloud environment using local LXD VMs, removing the need for real OpenStack dependencies.
+- **Topology Visualization:** Automatically derives a network graph from YAML configs, providing instant visibility into service interdependencies.
+- **Agentic Connection Management:** Integrates with AI agents to automate the process of proposing and implementing network connections via PRs/MRs.
+- **Verifiable Connectivity:** Includes an E2E test suite to ensure the visual topology matches the actual network state.
 
-## Components
+## 🛠️ Architecture
+
+The project maps production patterns to a local environment:
 
 | Component | Production (ps7) | Demo (Local) |
 |-----------|-----------------|--------------|
-| Compute | OpenStack | LXD VMs |
-| Proxy | egress.ps7.internal:3128 | Squid Proxy on LXD VM |
-| DNS | Internal DNS zones | Local DNS (bind9 or dnsmasq) |
-| Storage | S3 (radosgw.ps7.canonical.com) | Local filesystem |
-| Auth | Vault + Keystone | Skipped for demo |
-| Ingress | HAProxy + Juju | HAProxy or nginx on LXD VM |
-| Monitoring | COS Lite | COS Lite or simplified monitoring |
+| **Compute** | OpenStack | LXD VMs |
+| **Proxy** | `egress.ps7.internal` | Squid Proxy (Local) |
+| **DNS** | Internal DNS zones | BIND9 (`.demo.local`) |
+| **Ingress** | HAProxy + Juju | HAProxy (Local) |
+| **Connectivity** | Security Groups | UFW / LXD ACLs |
+| **Monitoring** | COS Lite | Prometheus / Grafana |
 
-## Structure
+## 📂 Repository Structure
 
+```text
+├── .github/skills/      # Agent skills (e.g., visualize-infra)
+├── demo/                # The "Source of Truth"
+│   ├── defs/            # Host and subnet definitions
+│   ├── rules/           # Connectivity rules (proxy, ingress, etc.)
+│   └── services/        # Service-specific configurations
+├── terraform/           # IaC for deploying the LXD environment
+├── tests/               # E2E connectivity tests (test-e2e.sh)
+└── DEMO_GUIDE.md        # Step-by-step showcase narrative
 ```
-├── proxy/          # Squid proxy configuration
-├── dns/            # DNS zone configurations
-├── firewall/       # Firewall rules for LXD VMs
-├── ingress/        # HAProxy / nginx ingress configs
-├── terraform/      # Local Terraform deployments
-│   ├── modules/    # Reusable modules
-│   └── deployments/# Demo deployment configs
-└── docs/           # Documentation
+
+## 🚀 Quick Start
+
+### 1. Deploy Infrastructure
+```bash
+cd terraform
+terraform init
+terraform apply -auto-approve
 ```
 
-## Quick Start
+### 2. Visualize Topology
+If you have the `superpilot` toolset installed:
+```bash
+# Generate the graph
+python3 src/infra_graph/main.py --generate
+# Launch the visualization
+cd src/infra_graph/web && python3 -m http.server 8000
+```
+Then open `http://localhost:8000` in your browser.
 
-1. Install LXD: `sudo snap install lxd`
-2. Initialize LXD: `lxd init --auto`
-3. Deploy VMs: `cd terraform && terraform init && terraform apply`
-4. Configure proxy: `cd proxy && ./setup-squid.sh`
-5. Configure DNS: `cd dns && ./setup-dns.sh`
-6. Configure firewall: `cd firewall && ./setup-firewall.sh`
-7. Configure ingress: `cd ingress && ./setup-ingress.sh`
+### 3. Verify Connectivity
+```bash
+./tests/test-e2e.sh
+```
+
+## 🤖 Agent Integration
+This repository is designed to be managed by AI agents. Using the provided skills in `.github/skills/`, agents can:
+- **Visualize:** Map the current state of the infrastructure.
+- **Connect:** Propose and implement new network paths by generating diffs for the config repos.
+- **Validate:** Ensure that changes didn't break existing connectivity.
 
 ## Requirements
-
-- LXD installed locally
+- LXD installed and initialized (`lxd init`)
 - Terraform >= 1.5
-- Local network access (no external cloud required)
-
-## Notes
-
-- This is a **demo/hackathon project** — not production infrastructure
-- No Vault, Keystone, or S3 required — all state is local
-- Proxy, DNS, firewall, and ingress configurations imitate ps7 patterns but run on LXD VMs
+- Python 3.x (with `PyYAML`)
 
