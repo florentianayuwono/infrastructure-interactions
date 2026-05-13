@@ -61,7 +61,16 @@ Then open `http://localhost:8000` in your browser.
 ./tests/test-e2e.sh
 ```
 
-![Demo](agent_collab.mov)
+![Demo](agent_collab.gif)
+
+## 🤝 Multi-Agent Development & Communications
+
+This project supports collaborative workflows where multiple AI agents work together autonomously to manage infrastructure:
+
+- **Parallel Agent Dispatch:** Independent tasks (e.g., DNS config, firewall rules, proxy ACLs) are handled by specialised agents running concurrently, reducing turnaround time.
+- **Inter-Agent Messaging:** Agents communicate via a shared `RegistryServer`, passing structured messages to coordinate state and avoid conflicts.
+- **Skill-Based Roles:** Each agent is scoped to a skill (e.g., `visualize-infra`, `canonical-is-dns-configs`), ensuring clear ownership and preventing overlapping changes.
+- **Human-in-the-Loop:** Agents produce PRs/MRs for human review rather than applying changes directly, keeping engineers in control of production state.
 
 ## 🤖 Agent Integration
 This repository is designed to be managed by AI agents. Using the provided skills in `.github/skills/`, agents can:
