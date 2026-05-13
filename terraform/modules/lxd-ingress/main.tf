@@ -31,7 +31,7 @@ locals {
 
     frontend http_front
       bind *:80
-      bind *:443 ssl crt /etc/ssl/certs/haproxy-selfsigned.pem
+      bind *:443
       stats uri /stats
       stats auth admin:admin
       use_backend proxy_backend if { hdr(host) -i proxy.demo.local }
@@ -59,11 +59,16 @@ module "vm" {
   disk           = "5GiB"
   network        = var.network
   ip             = var.ip
-  packages       = ["haproxy"]
+  packages       = ["haproxy", "openssl"]
   config_files   = {
     "/etc/haproxy/haproxy.cfg" = local.haproxy_cfg
   }
   exec_commands  = [
+    "systemctl stop haproxy || true",
+    "systemctl reset-failed haproxy || true",
+    "mkdir -p /etc/ssl/certs /etc/ssl/private",
+    "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/haproxy-selfsigned.key -out /etc/ssl/certs/haproxy-selfsigned.pem -subj '/CN=ingress.demo.local'",
+    "cat /etc/ssl/private/haproxy-selfsigned.key >> /etc/ssl/certs/haproxy-selfsigned.pem",
     "systemctl enable haproxy",
     "systemctl restart haproxy"
   ]

@@ -5,9 +5,9 @@ variable "demo_network_name" {
 }
 
 variable "demo_network_cidr" {
-  description = "CIDR for demo network"
+  description = "CIDR for demo network (use gateway IP, e.g., 10.142.65.1/24)"
   type        = string
-  default     = "10.142.65.0/24"
+  default     = "10.142.65.1/24"
 }
 
 variable "vm_profiles" {

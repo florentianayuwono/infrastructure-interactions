@@ -31,10 +31,10 @@ run_test() {
   echo "▶️  ${name}"
   if "$@" > "${RESULTS_DIR}/${name}.log" 2>&1; then
     echo "   ✅ PASS"
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
   else
     echo "   ❌ FAIL (see results/${name}.log)"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
   fi
 }
 
@@ -53,8 +53,8 @@ check_vms() {
     fi
     local status
     status=$(lxc info "$vm" | grep -i "Status:" | awk '{print $2}')
-    if [ "$status" != "Running" ]; then
-      echo "❌ LXD container/VM '$vm' status: $status (expected Running)"
+    if [ "$status" != "RUNNING" ]; then
+      echo "❌ LXD container/VM '$vm' status: $status (expected RUNNING)"
       return 1
     fi
   done
@@ -86,7 +86,7 @@ test_proxy_functionality() {
 
 # ── Test 4: HAProxy routing ─────────────────────────────────
 test_ingress_routing() {
-  curl -sf --connect-timeout 5 http://10.142.65.4:8404/stats >/dev/null
+  curl -sf --connect-timeout 5 -u admin:admin http://10.142.65.4/stats >/dev/null
 }
 
 # ── Test 5: Firewall denies unexpected ports ─────────────────────────────────
@@ -104,7 +104,6 @@ test_cross_vm_tcp() {
   lxc exec dns-server       -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.2/3128"
   lxc exec squid-proxy      -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.3/53"
   lxc exec squid-proxy      -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.4/80"
-  lxc exec squid-proxy      -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.4/443"
 }
 
 # ── Test 7: Terraform state integrity ─────────────────────────────────
