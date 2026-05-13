@@ -1,0 +1,24 @@
+$TTL	604800
+@       IN      SOA     ns.demo.local. admin.demo.local. (
+                              1         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      ns.demo.local.
+ns      IN      A       10.150.0.3
+
+; VMs
+proxy           IN      A       10.150.0.2
+dns             IN      A       10.150.0.3
+ingress         IN      A       10.150.0.4
+monitoring      IN      A       10.150.0.5
+app-01          IN      A       10.150.0.10
+app-02          IN      A       10.150.0.11
+
+; Services
+grafana         IN      CNAME   monitoring.demo.local.
+prometheus      IN      CNAME   monitoring.demo.local.
+loki            IN      CNAME   monitoring.demo.local.
+app             IN      CNAME   ingress.demo.local.

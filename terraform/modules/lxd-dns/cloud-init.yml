@@ -1,0 +1,25 @@
+#cloud-config
+package_update: true
+packages:
+  - bind9
+  - bind9utils
+
+write_files:
+  - path: /etc/bind/zones/db.demo.local
+    content: |
+      ${zone_file}
+    owner = root:bind
+    permissions: '0644'
+
+  - path: /etc/bind/named.conf.local
+    content: |
+      ${named_conf}
+    owner = root:bind
+    permissions: '0644'
+
+runcmd:
+  - mkdir -p /etc/bind/zones
+  - chown -R bind:bind /etc/bind/zones
+  - systemctl enable named
+  - systemctl restart named
+  - echo "BIND9 DNS ready on port 53"

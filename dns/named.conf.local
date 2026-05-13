@@ -1,0 +1,9 @@
+zone "demo.local" {
+    type master;
+    file "/etc/bind/zones/db.demo.local";
+};
+
+zone "0.150.10.in-addr.arpa" {
+    type master;
+    file "/etc/bind/zones/db.10.150.0";
+};

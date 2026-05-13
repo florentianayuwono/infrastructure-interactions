@@ -1,0 +1,16 @@
+#cloud-config
+package_update: true
+packages:
+  - squid
+
+write_files:
+  - path: /etc/squid/squid.conf
+    content: |
+      ${squid_conf}
+    owner: root:root
+    permissions: '0644'
+
+runcmd:
+  - systemctl enable squid
+  - systemctl restart squid
+  - echo "Squid proxy ready on port 3128"

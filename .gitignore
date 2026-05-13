@@ -1,0 +1,18 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+terraform.tfplan
+terraform.tfstate
+terraform.tfstate.backup
+
+# Local overrides
+*.auto.tfvars
+override.tf
+override.tf.json
+.terraform.lock.hcl
+
+# Misc
+*.log
+.DS_Store
