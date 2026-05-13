@@ -1,0 +1,13 @@
+{
+  "name": "superpilot",
+  "description": "Distributed multi-agent registry for GitHub Copilot CLI — skills for starting the registry server and joining it from any Copilot session",
+  "version": "0.1.0",
+  "author": {
+    "name": "yanksyoon"
+  },
+  "homepage": "https://github.com/yanksyoon/superpilot",
+  "repository": "https://github.com/yanksyoon/superpilot",
+  "license": "MIT",
+  "keywords": ["multi-agent", "registry", "distributed", "copilot"],
+  "skills": ".github/skills/"
+}
