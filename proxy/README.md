@@ -2,6 +2,14 @@
 
 Imitates egress.ps7.internal:3128 for the local demo environment.
 
+## Upstream Source
+
+These proxy configurations are based on the canonical proxy configs maintained at:
+
+```
+git+ssh://charlie4284@git.launchpad.net/~charlie4284/canonical-is-internal-proxy-configs
+```
+
 ## Setup
 
 ```bash

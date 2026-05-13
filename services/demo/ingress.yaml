@@ -1,0 +1,10 @@
+ingress:
+  owner: demo
+  # Imitates upstream services/is/ps7.yaml ingress-haproxies
+  hosts:
+    haproxies:
+      - hosts/demo-ingress  # ingress-controller LXD VM (10.142.65.4)
+                            # Upstream equivalent: ps7/ingress-haproxies (91.189.92.13/14/15)
+                            # Routes: proxy.demo.local, dns.demo.local,
+                            #         monitoring.demo.local, gitlab.demo.local,
+                            #         jenkins.demo.local, api.demo.local

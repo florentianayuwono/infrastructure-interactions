@@ -2,6 +2,14 @@
 
 Firewall rules for LXD VMs imitating ps7 network isolation.
 
+## Upstream Source
+
+These rules are based on the canonical firewall configurations maintained at:
+
+```
+git+ssh://charlie4284@git.launchpad.net/canonical-is-firewalls
+```
+
 ## Rules
 
 1. Allow SSH (port 22) from host

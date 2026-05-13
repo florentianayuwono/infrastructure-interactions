@@ -1,0 +1,39 @@
+ingress:
+  rules:
+    # Mirrors upstream: IS VPN → ps7/ingress-haproxies: http, https
+    - comment: "Allow all demo VMs to reach ingress on HTTP/HTTPS"
+      from: [subnets/demo-network]
+      to: [services/demo/ingress/haproxies]
+      ports: [http, https]
+
+    # Mirrors upstream: services/ues/proposed-migration → ps7/ingress-haproxies: tcp/2222
+    - comment: "Allow HAProxy stats page access from demo network"
+      from: [subnets/demo-network]
+      to: [services/demo/ingress/haproxies]
+      ports: [haproxy-stats]
+
+    # Mirrors upstream: ingress haproxy routing to backend services
+    - comment: "Allow ingress to proxy backend (squid port)"
+      from: [services/demo/ingress/haproxies]
+      to: [services/demo/proxy/internal]
+      ports: [squid]
+
+    - comment: "Allow ingress to DNS backend"
+      from: [services/demo/ingress/haproxies]
+      to: [services/demo/dns/internal]
+      ports: [dns]
+
+    - comment: "Allow ingress to monitoring backend (Grafana)"
+      from: [services/demo/ingress/haproxies]
+      to: [services/demo/monitoring/internal]
+      ports: [grafana]
+
+    - comment: "Allow ingress to GitLab backend"
+      from: [services/demo/ingress/haproxies]
+      to: [services/demo/gitlab/internal]
+      ports: [http, https]
+
+    - comment: "Allow ingress to Jenkins backend"
+      from: [services/demo/ingress/haproxies]
+      to: [services/demo/jenkins/internal]
+      ports: [jenkins]

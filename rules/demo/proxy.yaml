@@ -1,0 +1,23 @@
+proxy:
+  rules:
+    # Mirrors upstream rules/is/squid.yaml: squid.internal allows outbound ftp/http/https/matrix-federation
+    - comment: "Demo egress proxy — allow outbound HTTP/HTTPS/FTP/matrix to any"
+      from: [services/demo/proxy/internal]
+      to: [any]
+      ports: [ftp, http, https, matrix-federation]
+
+    - comment: "Allow outbound ping from demo proxy for debugging"
+      from: [services/demo/proxy/internal]
+      to: [any]
+      ports: [ping]
+
+    # Mirrors upstream rules/is/squid.yaml: rfc1918-10 allowed to reach squid.internal on tcp/3128
+    - comment: "Allow all demo VMs to reach the egress proxy"
+      from: [subnets/demo-network]
+      to: [services/demo/proxy/internal]
+      ports: [squid]
+
+    - comment: "Allow demo infra VMs to reach the egress proxy"
+      from: [subnets/demo-infra]
+      to: [services/demo/proxy/internal]
+      ports: [squid]

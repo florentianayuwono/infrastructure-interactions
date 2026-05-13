@@ -1,0 +1,20 @@
+monitoring:
+  rules:
+    # Mirrors upstream: services/is/prometheus → ps7/cos: http, https
+    - comment: "Allow demo VMs to reach monitoring (Grafana UI)"
+      from: [subnets/demo-network]
+      to: [services/demo/monitoring/internal]
+      ports: [grafana]
+
+    # Mirrors upstream: services/is/ps7/oam → ps7/cos: http
+    - comment: "Allow monitoring to scrape metrics from all demo infra VMs"
+      from: [services/demo/monitoring/internal]
+      to: [subnets/demo-infra]
+      ports: [prometheus]
+
+    - comment: "Allow monitoring to scrape metrics from GitLab and Jenkins"
+      from: [services/demo/monitoring/internal]
+      to:
+        - services/demo/gitlab/internal
+        - services/demo/jenkins/internal
+      ports: [prometheus]

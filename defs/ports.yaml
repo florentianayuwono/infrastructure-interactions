@@ -1,0 +1,20 @@
+# Port aliases used in demo rules/
+# Mirrors upstream defs/ports.yaml — only the subset relevant to the demo.
+# Upstream source: git+ssh://charlie4284@git.launchpad.net/canonical-is-firewalls
+
+ports:
+  dns:      [tcp/53, udp/53]
+  ftp:      [tcp/21]
+  grafana:  [tcp/3000]
+  haproxy-stats: [tcp/8404]
+  http:     [tcp/80]
+  https:    [tcp/443]
+  https-alt: [tcp/8443]
+  jenkins:  [tcp/8080]
+  matrix-federation: [tcp/8448]
+  ntp:      [udp/123]
+  ping:     [icmp/echo-request]
+  prometheus: [tcp/9103]
+  smtp:     [tcp/25]
+  squid:    [tcp/3128]
+  ssh:      [tcp/22]

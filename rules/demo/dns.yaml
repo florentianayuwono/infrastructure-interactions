@@ -1,0 +1,12 @@
+dns:
+  rules:
+    # Mirrors upstream: various services → ps7/dns: dns (tcp+udp/53)
+    - comment: "Allow all demo VMs to query the demo DNS server"
+      from: [subnets/demo-network]
+      to: [services/demo/dns/internal]
+      ports: [dns]
+
+    - comment: "Allow demo DNS to forward queries to upstream resolvers"
+      from: [services/demo/dns/internal]
+      to: [any]
+      ports: [dns]

@@ -1,0 +1,5 @@
+gitlab:
+  owner: demo
+  hosts:
+    internal:
+      - hosts/demo-gitlab   # GitLab LXD VM (10.142.65.10)

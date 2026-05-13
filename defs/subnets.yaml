@@ -1,0 +1,29 @@
+subnets:
+  # Demo LXD network subnets
+  # Mirrors upstream defs/subnets.yaml (e.g. ps7-infrastructure, ps7-oam, rfc1918-10)
+
+  # The full demo LXD bridge network
+  demo-network: [10.142.0.0/16]
+
+  # Infrastructure tier — VMs running core services (proxy, dns, ingress, monitoring)
+  # Mirrors upstream: ps7-infrastructure, ps7-oam
+  demo-infra: [10.142.65.0/24]
+
+  # Individual service subnets (single-host, matching LXD VM IPs)
+  demo-proxy:      [10.142.65.2/32]
+  demo-dns:        [10.142.65.3/32]
+  demo-ingress:    [10.142.65.4/32]
+  demo-monitoring: [10.142.65.5/32]
+  demo-gitlab:     [10.142.65.10/32]
+  demo-jenkins:    [10.142.65.11/32]
+  demo-api:        [10.142.65.12/32]
+  demo-mail:       [10.142.65.20/32]
+
+  # RFC1918 — used in proxy ACL rules (mirrors upstream subnets/rfc1918-10)
+  rfc1918-10:  [10.0.0.0/8]
+  rfc1918-172: [172.16.0.0/12]
+  rfc1918-192: [192.168.0.0/16]
+  rfc1918:
+  - rfc1918-10
+  - rfc1918-172
+  - rfc1918-192

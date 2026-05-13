@@ -1,0 +1,5 @@
+jenkins:
+  owner: demo
+  hosts:
+    internal:
+      - hosts/demo-jenkins  # Jenkins LXD VM (10.142.65.11)

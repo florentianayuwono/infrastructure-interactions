@@ -1,0 +1,25 @@
+infrastructure:
+  rules:
+    # Mirrors upstream rules/is/ps7.yaml: IS VPN → ps7/infrastructure: ssh
+    - comment: "Allow SSH to all demo infra VMs from the demo network"
+      from: [subnets/demo-network]
+      to: [subnets/demo-infra]
+      ports: [ssh]
+
+    # Mirrors upstream rules/is/ps7.yaml: IS VPN → ps7/infrastructure: ping
+    - comment: "Allow ping between all demo VMs"
+      from: [subnets/demo-network]
+      to: [subnets/demo-network]
+      ports: [ping]
+
+    # Mirrors upstream rules/is/ps7.yaml: ps7/oam ↔ ps7/oam: any (inter-AZ)
+    - comment: "Allow inter-VM traffic within the demo infra subnet"
+      from: [subnets/demo-infra]
+      to: [subnets/demo-infra]
+      ports: [any]
+
+    # Mirrors upstream rules/is/testing.yaml: ps5-nwgw ↔ ps7-nwgw: any
+    - comment: "Allow tunnel establishment between demo network gateways"
+      from: [subnets/demo-network]
+      to: [subnets/demo-network]
+      ports: [any]

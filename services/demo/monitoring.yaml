@@ -1,0 +1,8 @@
+monitoring:
+  owner: demo
+  # Imitates upstream services/is/ps7.yaml cos + falcosidekick
+  # (cos-lite-ps7.demo.local and falcosidekick-ps7.demo.local both resolve here)
+  hosts:
+    internal:
+      - hosts/demo-monitoring  # monitoring LXD VM (10.142.65.5)
+                               # Grafana on tcp/3000

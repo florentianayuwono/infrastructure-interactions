@@ -1,0 +1,8 @@
+dns:
+  owner: demo
+  # Imitates upstream services/is/ps7.yaml dns + BIND9 internal DNS service
+  hosts:
+    internal:
+      - hosts/demo-dns     # dns-server LXD VM (10.142.65.3)
+                           # Authoritative for demo.local zone
+                           # Forwarders: 8.8.8.8, 8.8.4.4

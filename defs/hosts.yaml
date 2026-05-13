@@ -1,0 +1,12 @@
+hosts:
+  # Demo LXD VM hosts
+  # Mirrors upstream defs/hosts.yaml (e.g. ps7-egress-proxy: [91.189.92.10, ...])
+
+  demo-proxy:     [10.142.65.2]   # squid-proxy LXD VM  — imitates ps7-egress-proxy
+  demo-dns:       [10.142.65.3]   # dns-server LXD VM   — imitates internal BIND9
+  demo-ingress:   [10.142.65.4]   # ingress-controller  — imitates ps7/ingress-haproxies
+  demo-monitoring:[10.142.65.5]   # monitoring VM       — imitates ps7/cos + falcosidekick
+  demo-gitlab:    [10.142.65.10]  # GitLab VM
+  demo-jenkins:   [10.142.65.11]  # Jenkins VM
+  demo-api:       [10.142.65.12]  # API VM
+  demo-mail:      [10.142.65.20]  # Mail VM
