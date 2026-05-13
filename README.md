@@ -6,6 +6,8 @@ A high-fidelity imitation of Canonical's production ps7 OpenStack environment, d
 
 - **LXD-Based Simulation:** Imitates a complex cloud environment using local LXD VMs, removing the need for real OpenStack dependencies.
 - **Topology Visualization:** Automatically derives a network graph from YAML configs, providing instant visibility into service interdependencies.
+<img width="1598" height="958" alt="Screenshot from 2026-05-13 22-09-41" src="https://github.com/user-attachments/assets/5d8a35f9-9081-402b-b17a-f86f37be05e7" />
+
 - **Agentic Connection Management:** Integrates with AI agents to automate the process of proposing and implementing network connections via PRs/MRs.
 - **Verifiable Connectivity:** Includes an E2E test suite to ensure the visual topology matches the actual network state.
 
