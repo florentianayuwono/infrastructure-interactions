@@ -1,0 +1,22 @@
+// BIND configuration for demo.local zone
+// Imitates internal DNS from ps7
+
+zone "demo.local" {
+    type master;
+    file "/etc/bind/db.demo.local";
+};
+
+// Reverse zone for 10.142.65.x
+zone "65.142.10.in-addr.arpa" {
+    type master;
+    file "/etc/bind/db.10.142.65";
+};
+
+// Allow queries from demo network
+allow-query { 10.142.0.0/16; 127.0.0.1; };
+
+// Forwarders
+forwarders {
+    8.8.8.8;
+    8.8.4.4;
+};

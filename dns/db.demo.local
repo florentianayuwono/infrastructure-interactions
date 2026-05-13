@@ -1,0 +1,42 @@
+; BIND zone file for demo.local
+; Imitates internal DNS zones from ps7
+
+$TTL    604800
+@       IN      SOA     ns1.demo.local. admin.demo.local. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      ns1.demo.local.
+@       IN      A       10.142.65.3
+ns1     IN      A       10.142.65.3
+
+; Infrastructure hosts
+proxy           IN      A       10.142.65.2
+dns             IN      A       10.142.65.3
+ingress         IN      A       10.142.65.4
+monitoring      IN      A       10.142.65.5
+
+; Services
+www             IN      CNAME   ingress.demo.local.
+api             IN      CNAME   ingress.demo.local.
+
+; Subdomains for services
+services        IN      NS      ns1.demo.local.
+infra           IN      NS      ns1.demo.local.
+
+; ps7 imitation hostnames (mapped to local IPs)
+cos-lite-ps7    IN      CNAME   monitoring.demo.local.
+falcosidekick-ps7 IN    CNAME   monitoring.demo.local.
+
+; Local demo aliases
+gitlab          IN      A       10.142.65.10
+jenkins         IN      A       10.142.65.11
+
+; Mail server (if needed)
+mail            IN      A       10.142.65.20
+
+; Wildcard for any other services
+*.services      IN      CNAME   ingress.demo.local.
