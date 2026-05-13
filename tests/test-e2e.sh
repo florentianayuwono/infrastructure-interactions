@@ -73,9 +73,9 @@ test_vm_ping() {
 
 # ── Test 2: DNS resolution via BIND9 ─────────────────────────────────
 test_dns_resolution() {
-  lxc exec proxy -- dig +short @10.142.65.3 proxy.demo.local
-  lxc exec proxy -- dig +short @10.142.65.3 ingress.demo.local
-  lxc exec proxy -- dig +short @10.142.65.3 monitoring.demo.local
+  lxc exec squid-proxy -- dig +short @10.142.65.3 proxy.demo.local
+  lxc exec squid-proxy -- dig +short @10.142.65.3 ingress.demo.local
+  lxc exec squid-proxy -- dig +short @10.142.65.3 monitoring.demo.local
 }
 
 # ── Test 3: Squid proxy functionality ─────────────────────────────────
@@ -92,7 +92,7 @@ test_ingress_routing() {
 # ── Test 5: Firewall denies unexpected ports ─────────────────────────────────
 test_firewall_deny() {
   # port 9999 should NOT be open on dns container
-  if lxc exec proxy -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.3/9999" 2>/dev/null; then
+  if lxc exec squid-proxy -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.3/9999" 2>/dev/null; then
     echo "Port 9999 should be blocked"
     return 1
   fi
@@ -101,10 +101,10 @@ test_firewall_deny() {
 
 # ── Test 6: Cross-VM TCP service reachability ─────────────────────────────────
 test_cross_vm_tcp() {
-  lxc exec dns   -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.2/3128"
-  lxc exec proxy -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.3/53"
-  lxc exec proxy -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.4/80"
-  lxc exec proxy -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.4/443"
+  lxc exec dns-server       -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.2/3128"
+  lxc exec squid-proxy      -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.3/53"
+  lxc exec squid-proxy      -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.4/80"
+  lxc exec squid-proxy      -- timeout 3 bash -c "exec 3<>/dev/tcp/10.142.65.4/443"
 }
 
 # ── Test 7: Terraform state integrity ─────────────────────────────────
