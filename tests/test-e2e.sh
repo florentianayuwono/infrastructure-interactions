@@ -45,26 +45,26 @@ check_vms() {
     return 1
   fi
 
-  local required=(proxy dns ingress monitoring)
+  local required=(squid-proxy dns-server ingress-controller monitoring)
   for vm in "${required[@]}"; do
     if ! lxc info "$vm" >/dev/null 2>&1; then
-      echo "❌ LXD container '$vm' not found"
+      echo "❌ LXD container/VM '$vm' not found"
       return 1
     fi
     local status
     status=$(lxc info "$vm" | grep -i "Status:" | awk '{print $2}')
     if [ "$status" != "Running" ]; then
-      echo "❌ LXD container '$vm' status: $status (expected Running)"
+      echo "❌ LXD container/VM '$vm' status: $status (expected Running)"
       return 1
     fi
   done
-  echo "✅ All LXD containers Running"
+  echo "✅ All LXD container/VMs Running"
   return 0
 }
 
 # ── Test 1: VM inter-connectivity (ping) ─────────────────────────────────
 test_vm_ping() {
-  for src in proxy dns ingress monitoring; do
+  for src in squid-proxy dns-server ingress-controller monitoring; do
     for dst in 10.142.65.2 10.142.65.3 10.142.65.4 10.142.65.5; do
       lxc exec "$src" -- ping -c 2 -W 2 "$dst" >/dev/null
     done
@@ -111,10 +111,10 @@ test_cross_vm_tcp() {
 test_terraform_state() {
   cd "${REPO_ROOT}/terraform/deployments/local-demo"
   terraform show >/dev/null
-  terraform state list | grep -q "lxd_instance.proxy"
-  terraform state list | grep -q "lxd_instance.dns"
-  terraform state list | grep -q "lxd_instance.ingress"
-  terraform state list | grep -q "lxd_instance.monitoring"
+  terraform state list | grep -q "module.proxy\."
+  terraform state list | grep -q "module.dns\."
+  terraform state list | grep -q "module.ingress\."
+  terraform state list | grep -q "module.monitoring\."
 }
 
 # ── Run E2E tests ─────────────────────────────────
