@@ -61,7 +61,7 @@ Then open `http://localhost:8000` in your browser.
 ./tests/test-e2e.sh
 ```
 
-![Demo](output.gif)
+![Demo](agent_collab.mov)
 
 ## 🤖 Agent Integration
 This repository is designed to be managed by AI agents. Using the provided skills in `.github/skills/`, agents can:
