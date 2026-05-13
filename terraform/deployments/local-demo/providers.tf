@@ -1,3 +1,4 @@
+# LXD provider for local VM-based demo
 terraform {
   required_providers {
     lxd = {
