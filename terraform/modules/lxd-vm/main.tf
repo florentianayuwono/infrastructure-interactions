@@ -1,5 +1,14 @@
 # Reusable LXD VM module
 
+terraform {
+  required_providers {
+    lxd = {
+      source  = "terraform-lxd/lxd"
+      version = "~> 2.0"
+    }
+  }
+}
+
 variable "name" {
   description = "Name of the LXD container/VM"
   type        = string
@@ -64,6 +73,22 @@ variable "config_files" {
   default     = {}
 }
 
+locals {
+  cloud_init_parts = {
+    package_update = true
+    packages       = var.packages
+    write_files = [
+      for path, content in var.config_files : {
+        path    = path
+        content = content
+      }
+    ]
+    runcmd = var.exec_commands
+  }
+
+  cloud_init = "#cloud-config\n${yamlencode(local.cloud_init_parts)}"
+}
+
 resource "lxd_instance" "vm" {
   name  = var.name
   image = var.image
@@ -72,6 +97,10 @@ resource "lxd_instance" "vm" {
   limits = {
     cpu    = var.cpu
     memory = var.memory
+  }
+
+  config = {
+    "user.user-data" = local.cloud_init
   }
 
   device {
@@ -92,26 +121,6 @@ resource "lxd_instance" "vm" {
       "ipv4.address" = var.ip != "" ? var.ip : null
     }
   }
-}
-
-# Push config files into the VM
-resource "lxd_file" "configs" {
-  for_each = var.config_files
-
-  remote      = "local"
-  instance    = lxd_instance.vm.name
-  target_path = each.key
-  content     = each.value
-}
-
-# Execute provisioning commands inside the VM
-resource "lxd_exec" "provision" {
-  count = length(var.exec_commands) > 0 ? 1 : 0
-
-  remote   = "local"
-  instance = lxd_instance.vm.name
-
-  command = join(" && ", var.exec_commands)
 }
 
 output "name" {

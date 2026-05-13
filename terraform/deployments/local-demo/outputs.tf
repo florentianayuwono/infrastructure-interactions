@@ -23,12 +23,7 @@ output "firewall" {
   value       = module.firewall
 }
 
-output "network_name" {
-  description = "LXD network used for demo"
-  value       = lxd_network.demo_net.name
-}
-
-output "network_cidr" {
-  description = "CIDR of demo network"
-  value       = var.demo_network_cidr
+output "network" {
+  description = "Demo network info"
+  value       = lxd_network.demo_net
 }
