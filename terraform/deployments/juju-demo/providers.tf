@@ -7,9 +7,6 @@ terraform {
       version = "~> 0.10"
     }
   }
-  backend "local" {
-    path = "terraform.tfstate"
-  }
 }
 
 provider "juju" {}

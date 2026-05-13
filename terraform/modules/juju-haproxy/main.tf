@@ -1,9 +1,21 @@
 # Juju-based haproxy deployment
 # Imitates deployments/haproxy/ps7/staging/main.tf
 
+variable "model_name" {
+  description = "Juju model name"
+  type        = string
+  default     = "hackathon-infra-interactions-ps7-staging"
+}
+
+variable "external_hostname" {
+  description = "External hostname"
+  type        = string
+  default     = "ingress-ps7.demo.local"
+}
+
 locals {
-  model_name            = "hackathon-infra-interactions-ps7-staging"
-  external_hostname     = "ingress-ps7.demo.local"
+  model_name        = var.model_name
+  external_hostname = var.external_hostname
 }
 
 data "juju_model" "demo_model" {
@@ -54,4 +66,8 @@ resource "juju_integration" "haproxy_ingress_configurator" {
     name     = module.haproxy.app_name
     endpoint = module.haproxy.endpoints.haproxy_route
   }
+}
+
+output "application_name" {
+  value = module.haproxy.app_name
 }

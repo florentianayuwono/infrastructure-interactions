@@ -1,17 +1,21 @@
 # Sample compute VM deployment
 # Imitates infrastructure-services compute resources
 
-locals {
-  model_name = "hackathon-infra-interactions-ps7-staging"
+variable "model_name" {
+  description = "Juju model name"
+  type        = string
+  default     = "hackathon-infra-interactions-ps7-staging"
 }
 
 data "juju_model" "demo_model" {
-  name = local.model_name
+  name = var.model_name
 }
 
 resource "juju_application" "sample_vm" {
   name  = "sample-compute-ps7"
   model = data.juju_model.demo_model.name
+
+  constraints = "arch=amd64 cores=2 mem=4096M root-disk=20480M"
 
   charm {
     name     = "ubuntu"
